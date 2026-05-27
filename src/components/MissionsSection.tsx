@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Plus, Target, AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import type { Database } from '../lib/database.types';
 
 type Mission = Database['public']['Tables']['daily_missions']['Row'];
 
 export default function MissionsSection() {
+  const { user } = useAuth();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -13,8 +15,8 @@ export default function MissionsSection() {
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
 
   useEffect(() => {
-    fetchMissions();
-  }, []);
+    if (user) fetchMissions();
+  }, [user]);
 
   const fetchMissions = async () => {
     try {
@@ -23,36 +25,27 @@ export default function MissionsSection() {
         .from('daily_missions')
         .select('*')
         .eq('date', today)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
       setMissions(data || []);
     } catch (error) {
       console.error('Error fetching missions:', error);
-      // Fallback to local storage for demo
-      const stored = localStorage.getItem('peakos_missions');
-      if (stored) {
-        setMissions(JSON.parse(stored));
-      }
     } finally {
       setLoading(false);
     }
   };
 
-  const saveMissions = async (updatedMissions: Mission[]) => {
-    setMissions(updatedMissions);
-    localStorage.setItem('peakos_missions', JSON.stringify(updatedMissions));
-  };
-
   const addMission = async () => {
     if (!newTitle.trim() || missions.length >= 3) return;
 
-    const mission: Mission = {
+    const mission = {
       id: crypto.randomUUID(),
-      user_id: '',
+      user_id: user?.id ?? '',
       title: newTitle.trim(),
       priority: newPriority,
-      status: 'not_started',
+      status: 'not_started' as const,
       date: new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -64,7 +57,6 @@ export default function MissionsSection() {
       await fetchMissions();
     } catch (error) {
       console.error('Error adding mission:', error);
-      saveMissions([...missions, mission]);
     }
 
     setNewTitle('');
@@ -73,31 +65,30 @@ export default function MissionsSection() {
   };
 
   const updateStatus = async (id: string, status: 'not_started' | 'doing' | 'done') => {
-    const updatedMissions = missions.map((m) =>
-      m.id === id ? { ...m, status, updated_at: new Date().toISOString() } : m
-    );
-
     try {
       const { error } = await supabase
         .from('daily_missions')
         .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user?.id);
       if (error) throw error;
       await fetchMissions();
     } catch (error) {
       console.error('Error updating mission:', error);
-      saveMissions(updatedMissions);
     }
   };
 
   const deleteMission = async (id: string) => {
     try {
-      const { error } = await supabase.from('daily_missions').delete().eq('id', id);
+      const { error } = await supabase
+        .from('daily_missions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user?.id);
       if (error) throw error;
       await fetchMissions();
     } catch (error) {
       console.error('Error deleting mission:', error);
-      saveMissions(missions.filter((m) => m.id !== id));
     }
   };
 
@@ -118,7 +109,6 @@ export default function MissionsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Today's Missions</h2>
@@ -135,7 +125,6 @@ export default function MissionsSection() {
         )}
       </div>
 
-      {/* Progress Bar */}
       {missions.length > 0 && (
         <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
           <div className="flex justify-between text-sm mb-2">
@@ -151,9 +140,8 @@ export default function MissionsSection() {
         </div>
       )}
 
-      {/* Add Mission Form */}
       {showForm && (
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-cyan-500/30 card-glow transition-all">
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-cyan-500/30">
           <h3 className="font-medium mb-3">Create New Mission</h3>
           <input
             type="text"
@@ -171,9 +159,7 @@ export default function MissionsSection() {
                 key={p}
                 onClick={() => setNewPriority(p)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  newPriority === p
-                    ? priorityColors[p]
-                    : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                  newPriority === p ? priorityColors[p] : 'bg-gray-700/50 text-gray-400'
                 }`}
               >
                 {p.charAt(0).toUpperCase() + p.slice(1)}
@@ -184,16 +170,12 @@ export default function MissionsSection() {
             <button
               onClick={addMission}
               disabled={!newTitle.trim()}
-              className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+              className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 disabled:opacity-50 transition-all font-medium"
             >
               Create Mission
             </button>
             <button
-              onClick={() => {
-                setShowForm(false);
-                setNewTitle('');
-                setNewPriority('medium');
-              }}
+              onClick={() => { setShowForm(false); setNewTitle(''); }}
               className="px-4 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
             >
               Cancel
@@ -202,7 +184,6 @@ export default function MissionsSection() {
         </div>
       )}
 
-      {/* Missions List */}
       <div className="space-y-3">
         {loading ? (
           <div className="text-center py-12 text-gray-400">Loading...</div>
@@ -256,7 +237,6 @@ export default function MissionsSection() {
         )}
       </div>
 
-      {/* Notification Reminder */}
       {missions.length > 0 && completedCount === 0 && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
