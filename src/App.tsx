@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Target, CheckSquare, Timer, BookOpen, Clock, MessageSquare, Menu, X } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
+import LoginPage from './components/LoginPage';
 import MissionsSection from './components/MissionsSection';
 import NonNegotiablesSection from './components/NonNegotiablesSection';
 import DeepWorkTimer from './components/DeepWorkTimer';
@@ -10,6 +12,7 @@ import FeedbackSection from './components/FeedbackSection';
 type Section = 'missions' | 'habits' | 'timer' | 'journal' | 'tracking' | 'feedback';
 
 function App() {
+  const { user, loading, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState<Section>('missions');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -24,22 +27,23 @@ function App() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'missions':
-        return <MissionsSection />;
-      case 'habits':
-        return <NonNegotiablesSection />;
-      case 'timer':
-        return <DeepWorkTimer />;
-      case 'journal':
-        return <JournalSection />;
-      case 'tracking':
-        return <TimeTrackingSection />;
-      case 'feedback':
-        return <FeedbackSection />;
-      default:
-        return <MissionsSection />;
+      case 'missions': return <MissionsSection />;
+      case 'habits': return <NonNegotiablesSection />;
+      case 'timer': return <DeepWorkTimer />;
+      case 'journal': return <JournalSection />;
+      case 'tracking': return <TimeTrackingSection />;
+      case 'feedback': return <FeedbackSection />;
+      default: return <MissionsSection />;
     }
   };
+
+  if (loading) return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!user) return <LoginPage />;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -74,13 +78,20 @@ function App() {
               ))}
             </nav>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={signOut}
+                className="text-xs text-gray-500 hover:text-red-400 transition-colors hidden md:block"
+              >
+                Logout
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -104,6 +115,12 @@ function App() {
                 {section.label}
               </button>
             ))}
+            <button
+              onClick={signOut}
+              className="w-full px-4 py-3 flex items-center gap-3 text-left text-red-400 hover:bg-gray-800"
+            >
+              Logout
+            </button>
           </div>
         )}
       </header>
