@@ -1,3 +1,4 @@
+import InstallBanner from './components/InstallBanner';
 import { useState } from 'react';
 import { Target, CheckSquare, Timer, BookOpen, Clock, MessageSquare, Menu, X } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
