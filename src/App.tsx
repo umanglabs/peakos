@@ -161,6 +161,7 @@ function App() {
           box-shadow: 0 0 30px rgba(34, 211, 238, 0.15), 0 4px 20px rgba(0, 0, 0, 0.5);
         }
       `}</style>
+<InstallBanner />
     </div>
   );
 }
