@@ -9,7 +9,11 @@ import DeepWorkTimer from './components/DeepWorkTimer';
 import JournalSection from './components/JournalSection';
 import TimeTrackingSection from './components/TimeTrackingSection';
 import FeedbackSection from './components/FeedbackSection';
-
+import AICoach from './components/AICoach';
+// sections array mein add karo:
+{ id: 'ai', label: 'AI', icon: Brain },
+// renderSection mein add karo:
+case 'ai': return <AICoach />;
 type Section = 'missions' | 'habits' | 'timer' | 'journal' | 'tracking' | 'feedback';
 
 function App() {
