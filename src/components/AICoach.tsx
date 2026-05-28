@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Brain, Send, Loader, Sparkles, Trash2 } from 'lucide-react';
+import {
+  Brain,
+  Send,
+  Loader,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -15,17 +22,17 @@ export default function AICoach() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const starterMessage: Message = {
+    role: 'assistant',
+    content:
+      'PeakOS AI online ⚡ Aaj ka main target kya hai?',
+  };
+
   useEffect(() => {
     if (user) {
       loadHistory();
     }
   }, [user]);
-
-  const starterMessage: Message = {
-    role: 'assistant',
-    content:
-      'PeakOS AI online ⚡ Aaj ka main target kya hai?'
-  };
 
   const loadHistory = async () => {
     try {
@@ -50,12 +57,6 @@ export default function AICoach() {
       setMessages(data.reverse() as Message[]);
     } catch (err) {
       console.error(err);
-
-alert(
-  err instanceof Error
-    ? err.message
-    : JSON.stringify(err)
-);
       setMessages([starterMessage]);
     }
   };
@@ -95,7 +96,8 @@ alert(
 
       return {
         missions: missionsRes.data || [],
-        habitsCompleted: habitsRes.data?.length || 0,
+        habitsCompleted:
+          habitsRes.data?.length || 0,
       };
     } catch (err) {
       console.error(err);
@@ -114,40 +116,45 @@ alert(
     return `
 You are PeakOS AI.
 
-Your job is to maximize the user's:
+Your mission:
+maximize the user's:
 - execution
-- discipline
-- clarity
-- consistency
-- learning
 - focus
+- discipline
+- consistency
+- clarity
 - growth
-- efficiency
 - momentum
+- efficiency
 
-You are not a generic chatbot.
-You are an execution-focused AI coach.
+You are NOT a generic chatbot.
+
+You are:
+- execution-focused
+- adaptive
+- practical
+- direct
+- intelligent
 
 Rules:
-- Keep responses SHORT.
+- Keep responses short.
 - Maximum 80 words.
-- Give actionable output.
-- Avoid long explanations.
-- Avoid fluff.
-- Be direct.
+- Give actionable advice.
 - Push execution.
-- Focus on leverage and priorities.
+- Avoid fluff.
+- Avoid generic motivation.
 - Detect confusion and simplify.
-- If user is procrastinating -> redirect to action.
-- If user is overwhelmed -> simplify into next step.
-- Always optimize for real-world progress.
+- Prioritize leverage and momentum.
+- Same language as user.
 
-User today's context:
+Today's user context:
 ${JSON.stringify(context)}
 
 Conversation:
 ${conversation
-  .map((m) => `${m.role}: ${m.content}`)
+  .map(
+    (m) => `${m.role}: ${m.content}`
+  )
   .join('\n')}
 `;
   };
@@ -160,14 +167,18 @@ ${conversation
       content: input.trim(),
     };
 
-    const updatedMessages = [...messages, userMessage];
+    const updatedMessages = [
+      ...messages,
+      userMessage,
+    ];
 
     setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
     try {
-      const context = await getUserContext();
+      const context =
+        await getUserContext();
 
       const prompt = buildPrompt(
         context,
@@ -175,16 +186,16 @@ ${conversation
       );
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type':
+              'application/json',
           },
           body: JSON.stringify({
             contents: [
               {
-                role: 'user',
                 parts: [
                   {
                     text: prompt,
@@ -192,36 +203,37 @@ ${conversation
                 ],
               },
             ],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 32,
-              topP: 0.95,
-              maxOutputTokens: 120,
-            },
           }),
         }
       );
 
       const data = await response.json();
 
-      alert(JSON.stringify(data));
+      console.log(
+        'Gemini Response:',
+        data
+      );
 
       if (!response.ok) {
         throw new Error(
-          data?.error?.message || 'Gemini request failed'
+          data?.error?.message ||
+            'Gemini request failed'
         );
       }
 
       const aiText =
         data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-        'Execution mode unstable. Retry.';
+        'Execution response failed. Retry.';
 
       const aiMessage: Message = {
         role: 'assistant',
         content: aiText,
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [
+        ...prev,
+        aiMessage,
+      ]);
 
       await supabase
         .from('ai_conversations')
@@ -229,7 +241,8 @@ ${conversation
           {
             user_id: user?.id,
             role: 'user',
-            content: userMessage.content,
+            content:
+              userMessage.content,
           },
           {
             user_id: user?.id,
@@ -238,7 +251,16 @@ ${conversation
           },
         ]);
     } catch (err) {
-      console.error(err);
+      console.error(
+        'AI Coach Error:',
+        err
+      );
+
+      alert(
+        err instanceof Error
+          ? err.message
+          : JSON.stringify(err)
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -322,7 +344,9 @@ ${conversation
       <div className="flex gap-2">
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) =>
+            setInput(e.target.value)
+          }
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               sendMessage();
@@ -334,7 +358,9 @@ ${conversation
 
         <button
           onClick={sendMessage}
-          disabled={loading || !input.trim()}
+          disabled={
+            loading || !input.trim()
+          }
           className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 disabled:opacity-50 transition-all"
         >
           <Send className="w-5 h-5 text-white" />
