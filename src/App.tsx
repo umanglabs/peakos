@@ -1,3 +1,5 @@
+import AICoach from './components/AICoach';
+import { Brain } from 'lucide-react';
 import InstallBanner from './components/InstallBanner';
 import { useState } from 'react';
 import { Target, CheckSquare, Timer, BookOpen, Clock, MessageSquare, Menu, X } from 'lucide-react';
