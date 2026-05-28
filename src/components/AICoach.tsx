@@ -50,6 +50,12 @@ export default function AICoach() {
       setMessages(data.reverse() as Message[]);
     } catch (err) {
       console.error(err);
+
+alert(
+  err instanceof Error
+    ? err.message
+    : JSON.stringify(err)
+);
       setMessages([starterMessage]);
     }
   };
@@ -198,7 +204,7 @@ ${conversation
 
       const data = await response.json();
 
-      console.log(data);
+      alert(JSON.stringify(data));
 
       if (!response.ok) {
         throw new Error(
